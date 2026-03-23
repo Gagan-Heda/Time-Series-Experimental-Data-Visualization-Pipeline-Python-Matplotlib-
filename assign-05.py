@@ -1,40 +1,42 @@
 #!/usr/bin/env python3
+
 import sys
-import matplotlib
-matplotlib.use("Agg")
-#Uses the Agg backend so you can save figures without opening a GUI window
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
-if len(sys.argv) < 3:
-    sys.exit(1)
+def read_data(filename):
+    """Read file and return label, x, mean, std (sample std)."""
+    with open(filename, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-input_files = sys.argv[1:-1]
-output_file = sys.argv[-1]
+    label = lines[0].strip()  # first line = legend
+    data = [list(map(float, line.split(","))) for line in lines[1:]]
+    data = np.array(data)
 
-for infile in input_files:
-    try:
-        with open(infile, 'r') as f:
-            lines = f.read().strip().splitlines()
-        label = lines[0].strip() 
-        x_vals, y_vals_mean, y_vals_std = [], [], []
+    x = data[:, 0]
+    y = data[:, 1:]
 
-        for line in lines[1:]:
-            parts = [float(x.strip()) for x in line.split(',')]
-            x_vals.append(parts[0]) 
-            replicates = parts[1:]  
-            y_vals_mean.append(np.mean(replicates))
-            y_vals_std.append(np.std(replicates))
-        plt.errorbar(x_vals, y_vals_mean, yerr=y_vals_std, label=label, capsize=0)
+    means = np.mean(y, axis=1)
+    stds = np.std(y, axis=1, ddof=0)
 
-    except FileNotFoundError:
-        print(f"Error: Input file '{infile}' not found.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error processing file '{infile}': {e}")
+    return label, x, means, stds
+
+def main():
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} infile1 [infile2 ... infileN] outfile")
         sys.exit(1)
 
-plt.xlabel("Time (min)")
-plt.ylabel("Cell count")
-plt.legend(loc="best")
-plt.savefig(output_file)
+    infiles = sys.argv[1:-1]
+    outfile = sys.argv[-1]
+
+    for infile in infiles:
+        label, x, means, stds = read_data(infile)
+        plt.errorbar(x, means, yerr=stds, label=label, capsize=0)
+
+    plt.xlabel("Time (min)")
+    plt.ylabel("Cell count")
+    plt.legend(loc="best")
+    plt.savefig(outfile)
+
+if __name__ == "__main__":
+    main()

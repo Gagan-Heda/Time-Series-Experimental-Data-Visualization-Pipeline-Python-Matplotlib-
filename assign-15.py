@@ -1,32 +1,44 @@
 #!/usr/bin/env python3
-import sys
-import matplotlib
-matplotlib.use("Agg")   
-#Uses the Agg backend so you can save figures without opening a GUI window
-import matplotlib.pyplot as plt
-# Requires at least 1 input file + 1 output file
-if len(sys.argv) < 3:
-    sys.exit(1)
-    
-input_files = sys.argv[1:-1] # Take everything except the last argument as the input file 
-output_file = sys.argv[-1]   # The last argument is the name of the output file
 
-for infile in input_files:
-    try:
-        with open(infile, 'r') as f:
-            lines = f.read().strip().splitlines()
-        label = lines[0].strip() # First line is used as the legend label
-        x_vals, y_vals = [], []
-        for line in lines[1:]:
-            x, y = line.split(',')
-            x_vals.append(float(x.strip()))
-            y_vals.append(float(y.strip()))
-        plt.plot(x_vals, y_vals, label=label)
-    except FileNotFoundError:
-        print(f"Error: Input file '{infile}' not found.")
+import sys
+import matplotlib.pyplot as plt
+
+def read_data(filename):
+    """Read a file and return (label, x, y)."""
+    with open(filename, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    label = lines[0]
+    data = [line.split(",") for line in lines[1:]]
+    x = [float(d[0]) for d in data]
+    y = [float(d[1]) for d in data]
+    return label, x, y
+
+def main():
+    # check args
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} infile1 [infile2] outfile")
         sys.exit(1)
 
-plt.xlabel("Time (min)")
-plt.ylabel("Cell count")
-plt.legend(loc="best")
-plt.savefig(output_file)
+    infile1 = sys.argv[1]
+    outfile = sys.argv[-1]
+
+    # read first dataset
+    label1, x1, y1 = read_data(infile1)
+    plt.plot(x1, y1, label=label1)
+
+    # optional second dataset
+    if len(sys.argv) == 4:
+        infile2 = sys.argv[2]
+        label2, x2, y2 = read_data(infile2)
+        plt.plot(x2, y2, label=label2)
+
+    # labels + legend
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.legend(loc="best")
+
+    # save
+    plt.savefig(outfile)
+
+if __name__ == "__main__":
+    main()
